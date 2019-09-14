@@ -1,69 +1,128 @@
 #include <iostream>
 #include <string>
-#include <string.h>
+#include <vector>
+
+#define ADD 1
+#define SUB 2
+#define MUL 3
+#define DIV 4
+#define NUM 0
+
+#define PREFIX 0
+#define INFEX 1
+#define POSTFIX 2
 
 using namespace std;
 
-class Node {
+class node {
 public:
-    Node *leftptr;
-    Node *rightptr;
+    node *leftchild;
+    node *rightchild;
+    node *parent;
 
-    Node (Node*, Node*, char, int);
-    char type;
-    int num;
+    int type;
+    int value;
+    char cvalue;
+
+    ~node();
 };
-Node::Node(Node *leftp, Node *rightp, char type1, int num1) {
-    leftptr = leftp;
-    rightptr = rightp;
-    type = type1;
-    num = num1;
+node::~node() {
+    if (leftchild != NULL)
+        delete leftchild;
+    if (rightchild != NULL)
+        delete rightchild;
+}
+class lexems {
+public:
+    vector<int> lexem;
+    vector<int> value;
+};
+lexems* CreateLexems(string str) {
+    lexems *lex = new lexems;
+    int x;
+    bool ConstructingInt = false;
+    for (int i=0; i < str.size(); i++) {
+        if (('0' <= str[i]) && (str[i] <= '9')) {
+            if (!ConstructingInt) {
+                (lex->lexem).push_back(NUM);
+                ConstructingInt = true;
+                x = 0;
+            }
+            x = x*10 + str[i]-'0';
+        }
+        else if (ConstructingInt) {
+            (lex->value).push_back(x);
+            ConstructingInt = false;
+        }
+        switch (str[i]) {
+        case '+':
+            (lex->lexem).push_back(ADD);
+            (lex->value).push_back(0);
+            break;
+        case '-':
+            (lex->lexem).push_back(SUB);
+            (lex->value).push_back(0);
+            break;
+        case '*':
+            (lex->lexem).push_back(MUL);
+            (lex->value).push_back(0);
+            break;
+        case '/':
+            (lex->lexem).push_back(DIV);
+            (lex->value).push_back(0);
+            break;
+        }
+    }
+    if (ConstructingInt)
+        (lex->value).push_back(x);
+    return lex;
 }
 
-class Tree {
-    Node *topnode;
-};
-void getnextlexem(string &expr, int *i, char *type, int *num) {
-    char buf[10];
-    while (expr[*i] == ' ')
-        *i++;
-    char c = expr[*i];
-    if ((c == '+') && (c == '-') && (c == '/') && (c == '*')) {
-        *i++;
-        *type = expr[*i];
+node* CreateHeap(lexems* lex, int *beg, int notation){
+    node* Node = new node;
+    switch(notation) {
+    case PREFIX:
+        if ((lex->lexem)[*beg] == NUM) {
+            Node->leftchild = NULL;
+            Node->rightchild = NULL;
+            Node->type = NUM;
+            Node->value = (lex->value)[*beg];
+            return Node;
+        }
+        Node->type = (lex->lexem)[*beg];
+        Node->value = 0;
+        Node->leftchild = CreateHeap(lex, beg, PREFIX);
+        Node->rightchild = CreateHeap(lex, beg, PREFIX);
+        return Node;
+    }
+}
+void TranslateHeap(node *top, lexems* lex, int notation) {
+    switch(notation) {
+    case PREFIX:
+        if (top->type == NUM) {
+            (lex->lexem).push_back(NUM);
+            (lex->value).push_back(top->value);
+            return;
+        }
+        (lex->lexem).push_back(top->type);
+        (lex->value).push_back(0);
+
+        TranslateHeap(top->leftchild, lex, PREFIX);
+        TranslateHeap(top->rightchild, lex, PREFIX);
         return;
     }
-    int j = 0;
-    do {
-        buf[j] = expr[*i];
-        buf[j++] = '\0';
-        *i++;
-    } while (expr[*i] != ' ')
-    *type = 'n';
-    *num = atoi(buf);
-    return;
 }
-void fillprefixA(Node *top, string& expr, int *i)
-{
-    char type; int num;
-    getnextlexem(expr, i, &(type), &(num));
-    Node *top;
-    if (type == 0) {
-        top->leftptr = NULL;
-        top->leftptr = NULL;
-        top->type = 'n';
-        top->num = stoi(lexem.first);
-    } else if (lexem.second == 1)
-    {
-        top->leftptr = new Node(NULL, NULL, '0', 0);
-        top->leftptr = new Node(NULL, NULL, '0', 0);
-        top->type = lexem.first[0];
-        top->num = 0;
-        fillprefixA(top->leftptr);
-        fillprefixA(top->rightptr);
-    }
-}
-
 int main() {
+    string x;
+    int i=0;
+    getline(cin, x);
+    lexems *lex = CreateLexems(x);
+    node *Node = CreateHeap(lex, &i, PREFIX);
+    delete lex;
+    TranslateHeap(Node, lex, PREFIX);
+    delete Node;
 
+    for(int i=0; i < (lex->lexem).size(); i++)
+        cout << (lex->lexem)[i] << "  "<< (lex->value)[i] << '\n';
+    return 0;
 }
