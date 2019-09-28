@@ -103,6 +103,7 @@ string *CreateString(lexems *lex) {
             break;
         case BRA:
             *x += '(';
+            *x += ' ';
             break;
         case KET:
             *x += ')';
@@ -205,9 +206,10 @@ void TranslateHeap(node *Node, lexems* lex, int notation) {
             TranslateHeap(Node->leftchild, lex, INFEX);
             lex->lexem.push_back(Node->type);
             lex->value.push_back(0);
+//            cout << "Adding " << Node->type << "\n";
             TranslateHeap(Node->rightchild, lex, INFEX);
             lex->lexem.push_back(KET);
-            lex->lexem.push_back(0);
+            lex->value.push_back(0);
         }
     }
     return;
