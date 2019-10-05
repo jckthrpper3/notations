@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stdlib.h>
 
 #define ADD 1
 #define SUB 2
@@ -24,7 +25,6 @@ public:
 
     int type;
     int value;
-    char cvalue;
 
     ~node();
 };
@@ -73,6 +73,14 @@ lexems* CreateLexems(string str) {
             (lex->lexem).push_back(DIV);
             (lex->value).push_back(0);
             break;
+        case '(':
+            (lex->lexem).push_back(BRA);
+            (lex->value).push_back(0);
+            break;
+        case ')':
+            (lex->lexem).push_back(KET);
+            (lex->value).push_back(0);
+            break;
         }
     }
     if (ConstructingInt)
@@ -83,9 +91,10 @@ lexems* CreateLexems(string str) {
 string *CreateString(lexems *lex) {
     string *x = new string;
     int t;
-    for (int i=0; i < (lex->lexem).size(); i++) {
+    for (int i=0; i < (lex->lexem).size();i++) {
         switch ((lex->lexem)[i]) {
         case NUM:
+            *x += ' ';
             *x += to_string((lex->value)[i]);
             *x += ' ';
             break;
@@ -103,7 +112,6 @@ string *CreateString(lexems *lex) {
             break;
         case BRA:
             *x += '(';
-            *x += ' ';
             break;
         case KET:
             *x += ')';
@@ -117,6 +125,8 @@ node* CreateHeap(lexems* lex, int *beg, int notation){
     node* Node;
     lexems *Lex;
     int Beg;
+    int BraKetNum;
+    vector<int> priority;
 
     if (*beg == (lex->lexem).size())
         return NULL;
@@ -150,7 +160,34 @@ node* CreateHeap(lexems* lex, int *beg, int notation){
 //        for(int i=0; i < (Lex->lexem).size(); i++)
 //        cout <<"L : "<< (Lex->lexem)[i] << "  "<< (Lex ->value)[i] << '\n';
         Beg = 0;
+        delete Lex;
         return CreateHeap(Lex, &Beg, PREFIX);
+    case INFEX:
+        BraKetNum = 0;
+
+        for (int i=0; i < lex->lexem.size(); i++) {
+            switch(lex->lexem) {
+            case BRA:
+                BraKetNum++;
+                break;
+            case KET:
+                BraKetNum--;
+                break;
+            case ADD:
+            case SUB:
+                priority.push_back(BraKetNum);
+                break;
+            case MUL:
+            case DIV:
+                priority.push_back(BraKetNum+1);
+                break;
+            default:
+                priority.push_back(-1);
+                break;
+            }
+        }
+
+        return NULL;
     }
 }
 
@@ -194,23 +231,25 @@ void TranslateHeap(node *Node, lexems* lex, int notation) {
         if (Node->type == NUM) {
             lex->lexem.push_back(NUM);
             lex->value.push_back(Node->value);
-//            cout << "Translating NUM: "<< Node->value<< '\n';
             return;
         } else
         if (Node == NULL) {
             return;
-        } else
-        if (1) {
-            (lex->lexem).push_back(BRA);
-            (lex->value).push_back(0);
+        } else {
+            if ((((Node->type) == ADD) || ((Node->type) == SUB))&&(1)) {
+                lex->lexem.push_back(BRA);
+                lex->value.push_back(0);
+            }
             TranslateHeap(Node->leftchild, lex, INFEX);
             lex->lexem.push_back(Node->type);
-            lex->value.push_back(0);
-//            cout << "Adding " << Node->type << "\n";
+            lex->value.push_back(Node->value);
             TranslateHeap(Node->rightchild, lex, INFEX);
-            lex->lexem.push_back(KET);
-            lex->value.push_back(0);
+            if (((Node->type) == ADD) || ((Node->type) == SUB)) {
+                lex->lexem.push_back(KET);
+                lex->value.push_back(0);
+            }
         }
+        return;
     }
     return;
 }
@@ -222,11 +261,41 @@ void FreeLexems(lexems *lex) {
         (lex->value).pop_back();
     }
 }
+
+void PrintLexems(lexems *lex) {
+    for (int i=0; i < lex->lexem.size(); i++) {
+        switch ((lex->lexem)[i]) {
+        case NUM:
+            cout << (lex->value)[i] << '\n';
+            break;
+        case ADD:
+            cout << "+\n";
+            break;
+        case SUB:
+            cout << "-\n";
+            break;
+        case MUL:
+            cout << "*\n";
+            break;
+        case DIV:
+            cout << "/\n";
+            break;
+        case BRA:
+            cout << "(\n";
+            break;
+        case KET:
+            cout << ")\n";
+            break;
+
+        }
+    }
+}
 int main() {
     int i=0;
     string x;
     getline(cin, x);
     lexems *lex = CreateLexems(x), *lexx = CreateLexems("");
+ //   PrintLexems(lex);
     node *Node = CreateHeap(lex, &i, PREFIX);
     FreeLexems(lex);
 
@@ -236,6 +305,6 @@ int main() {
 //    for(int i=0; i < (lex->lexem).size(); i++)
 //        cout <<"L : "<< (lex->lexem)[i] << "  "<< (lex ->value)[i] << '\n';
     string *y = CreateString(lex);
-    cout << *y;
+        cout << *y;
     return 0;
 }
